@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solis’ Battle Game</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #111;
+      font-family: sans-serif;
+      color: white;
+    }
+
+    #gameCanvas {
+      border: 4px solid silver;
+      display: block;
+      margin: auto;
+      background: #222;
+    }
+
+    #waveInfo {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 20px;
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div id="waveInfo">Wave: 1</div>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const hero = {
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      size: 30,
+      color: 'dodgerblue',
+      attackRange: 100,
+      attackCooldown: 0
+    };
+
+    let enemies = [];
+    let wave = 1;
+    const waveInfo = document.getElementById('waveInfo');
+
+    function spawnEnemies(count) {
+      for (let i = 0; i < count; i++) {
+        const edge = Math.floor(Math.random() * 4);
+        let x, y;
+        switch(edge) {
+          case 0: x = 0; y = Math.random() * canvas.height; break;
+          case 1: x = canvas.width; y = Math.random() * canvas.height; break;
+          case 2: x = Math.random() * canvas.width; y = 0; break;
+          case 3: x = Math.random() * canvas.width; y = canvas.height; break;
+        }
+        enemies.push({x, y, size: 20, color: 'red', speed: 1 + wave * 0.2});
+      }
+    }
+
+    function drawHero() {
+      ctx.fillStyle = hero.color;
+      ctx.beginPath();
+      ctx.arc(hero.x, hero.y, hero.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawEnemies() {
+      enemies.forEach(e => {
+        ctx.fillStyle = e.color;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function moveEnemies() {
+      enemies.forEach(e => {
+        const dx = hero.x - e.x;
+        const dy = hero.y - e.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        e.x += (dx / dist) * e.speed;
+        e.y += (dy / dist) * e.speed;
+      });
+    }
+
+    function attackEnemies() {
+      if (hero.attackCooldown > 0) return;
+      enemies = enemies.filter(e => {
+        const dx = hero.x - e.x;
+        const dy = hero.y - e.y;
+        return Math.sqrt(dx*dx + dy*dy) > hero.attackRange;
+      });
+      hero.attackCooldown = 30; // cooldown frames
+    }
+
+    function drawAttackRange() {
+      ctx.strokeStyle = 'rgba(0,255,255,0.3)';
+      ctx.beginPath();
+      ctx.arc(hero.x, hero.y, hero.attackRange, 0, Math.PI*2);
+      ctx.stroke();
+    }
+
+    function update() {
+      ctx.clearRect(0,0,canvas.width, canvas.height);
+      moveEnemies();
+      drawHero();
+      drawEnemies();
+      drawAttackRange();
+
+      if (hero.attackCooldown > 0) hero.attackCooldown--;
+
+      if (enemies.length === 0) {
+        wave++;
+        waveInfo.innerText = "Wave: " + wave;
+        spawnEnemies(5 + wave * 2);
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    canvas.addEventListener('click', attackEnemies);
+
+    // Start the game
+    spawnEnemies(5);
+    update();
+  </script>
+</body>
+</html>
